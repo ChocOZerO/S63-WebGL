@@ -8,15 +8,14 @@
 // script로 해석되지 않고 무시되도록 하는 것이 목적
 
 attribute vec3 aVertexPosition;
-// attribute : 셰이버 변수 종류(attribute | uniform | varying)
+// attribute : 셰이더 변수 종류(attribute | uniform | varying)
 // vec3 : 배열 타입, vec3는 3행 배열
 // aVertexPosition : 배열 이름, 한 개의 버텍스를 나타낸다. 관습적으로 맨 앞에 a를 붙여서 attribute임을 표시
 
 void main() {
-// 버텍스 셰이더 실행부
-// 버퍼에 있는 데이터를 gl.drawArrays()의 파라미터에 있는 정보를 기준으로 여러개의 버텍스로 분리하고,
-//     버텍스 하나마다 이 main() 함수가 실행되는데,
-//     여러 개의 코어에서 이 main() 함수가 각기 다른 버텍스 값을 기준으로 동시에 병렬 실행된다.
+// 버텍스 하나 마다 실행되는 버텍스 셰이더 실행부
+//     버퍼에 있는 배열 데이터는 gl.vertexAttribPointer()의 파라미터에 있는 정보를 기준으로 여러개의 버텍스로 분리되고,
+//     여러 개의 코어에서 이 main() 함수가 각기 다른 버텍스 정보를 기준으로 동시에 병렬 실행된다.
 
     gl_Position = vec4(aVertexPosition, 1.0);
     // vec4() : 네 개의 원소를 파라미터로 받아서 4행 벡터를 반환하는 함수
@@ -24,7 +23,7 @@ void main() {
     // 1.0 : 버텍스는 점 이므로 1.0(동차좌표계 내용 참고)
     // gl_Position : 버텍스 셰이더의 내장 변수. 동차좌표계를 사용하므로 vec4 타입만 받는다.
     // 별도의 return 문 없이도 gl_Position에 할당된 값이
-    //     파이프라인 상에서 버텍스셰이더의 다음 단계(프리미티브 조립)의 입력값으로 전달된다.
+    //     파이프라인 상에서 버텍스셰이더의 다음 단계(primitive 조립)의 입력값으로 전달된다.
     // 이 예제에서는 단순히 버텍스 하나를 그대로 gl_Position에 할당할 뿐이지만,
     //     일반적인 경우 버텍스에 여러가지 변환 연산을 적용한 후에 gl_Position에 값을 할당한다.
 }
@@ -39,9 +38,10 @@ precision mediump float;
 // float : 부동소수형 데이터
 
 void main() {
-// 프래그먼트 셰이더는 파이프라인 상에서 래스터라이징의 바로 다음단계에 있으며,
-// 래스터라이징의 결과물인 프래그먼트 하나하나마다 이 main() 함수가 실행되는데,
-//     여러 개의 코어에서 이 main() 함수가 각기 다른 프래그먼트 값을 기준으로 동시에 병렬 실행된다.
+// 프래그먼트 하나마다 실행되는 프래그먼트 셰이더 실행부
+//     프래그먼트 셰이더는 파이프라인 상에서 래스터라이징의 바로 다음단계에 있으며,
+//     래스터라이징의 결과물인 프래그먼트 하나하나마다 이 main() 함수가 실행되는데,
+//     여러 개의 코어에서 이 main() 함수가 각기 다른 프래그먼트 정보를 기준으로 동시에 병렬 실행된다.
 
     gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
     // 1.0, 1.0, 1.0, 1.0 : r, g, b, a 값
@@ -102,7 +102,7 @@ function createGLContext(canvas) {
  *     버텍스 셰이더, 프래그먼트 셰이더의 소스를 읽고, 컴파일하고
  *     셰이더 프로그램에 두 셰이더를 추가하고, 링크한다.
  *
- * @gl WebGL 컨텍스트. gl.~~~()는 버스를 통해 GPU에게 무언가를 시킨다라고 해석하자.
+ * @gl WebGL 컨텍스트. 'gl.~~~()는 버스를 통해 GPU에게 무언가를 시키는 것이다.'라고 해석하자.
  */
 function setupShaders(gl) {
     var vertexShaderSource = document.getElementById('vertexShaderSource').text;
@@ -141,7 +141,8 @@ function setupShaders(gl) {
     gl.attachShader(shaderProgram, vertexShader);
     gl.attachShader(shaderProgram, fragmentShader);
 
-    // 컴파일 된 두 셰이더를 링크한다. 링크할 때 varying 변수가 연결된다.
+    // 컴파일 된 두 셰이더를 링크한다.
+    // 링크할 때 버텍스 셰이더의 varying 변수와 프래그먼트 셰이더의 varying 변수가 연결된다.
     gl.linkProgram(shaderProgram);
 
     // 링크가 제대로 되었는지도 GPU에게 시켜서 확인
@@ -162,7 +163,7 @@ function setupShaders(gl) {
  * 버퍼 준비
  *     삼각형을 그릴 정보를 버퍼에 담는다.
  *
- * @gl WebGL 컨텍스트. gl.~~~()는 버스를 통해 GPU에게 무언가를 시킨다라고 해석하자. *
+ * @gl WebGL 컨텍스트. 'gl.~~~()는 버스를 통해 GPU에게 무언가를 시키는 것이다.'라고 해석하자.
  */
 function setupBuffers(gl) {
     // 버퍼를 담을 그릇을 GPU한테 얻어온다.
@@ -181,19 +182,21 @@ function setupBuffers(gl) {
     ];
 
     // 삼각형 정보를 Array Buffer에 담고, Array Buffer의 Float32 형 View인 Typed Array를 반환한다.
-    //     Array Buffer, Typed Array는 3강 내용 참고
+    // Array Buffer, Typed Array는 3강 내용 참고
     var typedArray = new Float32Array(triangleVertices);
 
     // GPU 메모리 내에 있는 gl.ARRAY_BUFFER라는 key에 바인딩 되어 있는 버퍼(vertexBuffer)에
     //     삼각형 정보를 담도록 GPU에게 시킨다.
     gl.bufferData(gl.ARRAY_BUFFER, typedArray, gl.STATIC_DRAW);
 
-    // 버텍스 하나를 나타내는 정보의 갯수(여기서는 x, y, z 만 사용하므로 3)
-    //     나중에 gl.draw~~~()에 사용
+    // 버텍스 하나의 위치를 나타내는 정보의 개수(1 ~ 4의 값 가능. 2D context라면 2를 쓴다. 여기서는 x, y, z를 사용하므로 3)
+    // 나중에 gl.vertexAttribPointer()에 사용
+    // itemsPerVertex는 내장 변수 아님
     vertexBuffer.itemsPerVertex = 3;
 
-    // // 버텍스의 갯수(여기서는 삼각형이므로 3)
-    //     나중에 gl.draw~~~()에 사용
+    // 버텍스의 갯수(여기서는 삼각형이므로 3)
+    // 나중에 gl.draw~~~()에 사용
+    // numOfVertices는 내장 변수 아님
     vertexBuffer.numOfVertices = 3;
 
     return vertexBuffer;
@@ -204,7 +207,7 @@ function setupBuffers(gl) {
  *     GPU에게 화면의 viewport 범위를 지정하도록 시키고,
  *     viewport 범위를 싹 칠해버릴 색깔을 지정하도록 시킨다.
  *
- * @gl WebGL 컨텍스트. gl.~~~()는 버스를 통해 GPU에게 무언가를 시킨다라고 해석하자.
+ * @gl WebGL 컨텍스트. 'gl.~~~()는 버스를 통해 GPU에게 무언가를 시키는 것이다.'라고 해석하자.
  * @canvas  viewport 범위 정보를 가지고 있는 캔버스
  */
 function setupViewport(gl, canvas) {
@@ -218,6 +221,7 @@ function setupViewport(gl, canvas) {
 /**
  * 그리기
  *     GPU에 각종 버퍼 정보를 전달해주고, gl.draw~~~()로 GPU에게 그리기를 시킨다.
+ *
  * @gl
  * @shaderProgram
  * @vertexBuffer
@@ -234,11 +238,19 @@ function draw(gl, shaderProgram, vertexBuffer) {
     //     할당하도록 GPU에게 시킨다.
     gl.vertexAttribPointer(
         indexOfVertexPositionAttrubite, // index : aVertexPosition에 접근할 수 있는 위치값
-        vertexBuffer.itemsPerVertex,    // size : vertexBuffer에 있는 버텍스 하나당 정보의 개수. x, y, z라서 3
+        vertexBuffer.itemsPerVertex,    // size : 버텍스 하나의 위치를 나타내는 위치 정보의 개수. x, y, z라서 3
         gl.FLOAT,                       // type : vertexBuffer에 담겨있는 데이터 타입(gl.FLOAT | gl.FIXED)
         false,                          // float이 아닌 데이터를 float로 변환할 지 여부
-        0,                              // stride :
-        0                               // offset :
+        0,                              // stride : 버텍스 하나를 구성하는 byte 수(0 ~ 255의 값)
+                                        //          stride == (위치 정보 개수 + 기타 정보 개수) * 데이터타입의 byte수
+                                        //          0이면 기타 정보 개수가 0인 것으로 간주한다.
+                                        //          여기서는 기타 정보 없이 위치 정보 개수가 3이므로
+                                        //          stride에 0을 주는 것과 12(위치 정보 개수 3 * float의 byte 수 4)를
+                                        //          주는 것은 같은 결과를 보여준다.
+        0                               // offset : 추출하고자 하는 정보의 시작 위치(byte 단위)
+                                        //          여기서는 기타 정보가 없으므로 0이지만
+                                        //          기타 정보가 있는 경우 0이외의 값이 올 수 있음
+                                        // stride와 offset은 http://stackoverflow.com/a/16888156 참고
     );
 
     // 파라미터로 지정된 위치에 있는 attribute 변수를 활성화 한다.
@@ -250,7 +262,7 @@ function draw(gl, shaderProgram, vertexBuffer) {
     // GPU에게 최종적으로 그리기를 시킨다.
     gl.drawArrays(
         gl.TRIANGLES, // mode : 그리는 방법을 지정. 정확하게는 버퍼 데이터로 생성할 primitive를 지정
-        0,            // first :
+        0,            // first : 그리기에 사용할 첫번째 버텍스의 위치(0이 아니면 안되던데..)
         vertexBuffer.numOfVertices  // count : 버텍스의 갯수
     );
 }
